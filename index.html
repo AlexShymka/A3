@@ -1,0 +1,60 @@
+<!doctype html>
+<html>
+  <head>
+    <link rel="stylesheet" href="style.css" />
+    <title>Socket.IO chat</title>
+  </head>
+	<script src="/socket.io/socket.io.js"></script>
+	<script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+	<script>
+	  $(function () {
+		var socket = io();
+		$('form').submit(function(e){
+			e.preventDefault(); // prevents page reloading
+			socket.emit('chat message', $('#m').val());
+			$('#m').val('');
+			return false;
+		});
+		socket.on('chat message', function(msg){
+			$('#messages').append($('<li>').html(msg));
+		});
+    socket.on('register', function(username, chatHistory){
+			$('#username')[0].innerHTML = username;
+      $('#users ul').empty();
+      $('#messages').empty();
+      for (var msg in chatHistory) {
+        $('#messages').append($('<li>').html(chatHistory[msg]));
+      }
+
+		});
+    socket.on('user update', function(userList){
+			$('#users ul').empty();
+      console.log('Emptied the user list. Updating...');
+      for (var user in userList) {
+        console.log(userList[user]);
+        $('#users ul').append($('<li>').text(userList[user]));
+      }
+		});
+    //End main
+	});
+	</script>
+  <body>
+    <div id="users">
+      You:<br>
+      <b><span id="username"></span></b>
+      <br>
+      All users:
+      <ul>
+
+      </ul>
+    </div>
+  <div id="main">
+    <div id="msgbox">
+      <ul id="messages"></ul>
+    </div>
+    <form action="">
+      <input id="m" autocomplete="off" /><button>Send</button>
+    </form>
+  </div>
+  </body>
+</html>
