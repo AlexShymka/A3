@@ -11,6 +11,8 @@ var i = 0;
 var userList = [];
 var chatHistory = [];
 
+var username;
+
 app.get('/list', function(req, res){
   res.send(req.cookies);
 });
@@ -19,10 +21,13 @@ app.get('/', function(req, res){
   console.log("Cookie Parsing");
 
   if (req.cookies['SengA3']) {
+    username = req.cookies['SengA3'];
     console.log('Cookie found. Value: ' + req.cookies['SengA3']);
+
   }
   else {
-    res.cookie('SengA3', 0);
+    username = 'user_'+ i;
+    res.cookie('SengA3', username);
     console.log("No Cookie found. Cookie Sent");
   }
 
@@ -32,11 +37,13 @@ app.get('/', function(req, res){
 
 var weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+console.log("init_done");
 
 io.on('connection', function(socket){
-  socket.thisUser = 'user_'+ i;
+  socket.thisUser = username;
   socket.color = [000,000,000];
   userList.push(socket.thisUser);
+
 	console.log(socket.thisUser + ' connected');
   console.log(userList);
 
