@@ -32,7 +32,7 @@
       console.log('Emptied the user list. Updating...');
       for (var user in userList) {
         console.log(userList[user]);
-        $('#users ul').append($('<li>').text(userList[user]));
+        $('#users ul').append($('<li>').html(userList[user]));
       }
 		});
     //End main

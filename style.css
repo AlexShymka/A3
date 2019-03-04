@@ -7,7 +7,7 @@ html{
   height: 100%;
 }
 body {
-  font: 13px Helvetica, Arial;
+  font: 1em Helvetica, Arial;
   height: 100%;
 }
 form {
@@ -39,9 +39,15 @@ form button {
   background: #eee;
 }
 #users{
-  background: yellow;
+  background: #f5f788;
   float: left;
   height: 100%;
+  width: 150px;
+  overflow: auto;
+  white-space: nowrap;
+}
+#users li{
+  margin: 4px;
 }
 #main{
   display: flex;
@@ -50,5 +56,6 @@ form button {
   justify-content: flex-end;
 }
 #msgbox{
+  overflow-wrap: break-word;
   overflow: auto;
 }
