@@ -17,6 +17,8 @@
 		});
 		socket.on('chat message', function(msg){
 			$('#messages').append($('<li>').html(msg));
+      console.log(document.cookie);
+      $('#msgbox').scrollTop(999999999);
 		});
     socket.on('register', function(username, chatHistory){
 			$('#username')[0].innerHTML = username;
@@ -25,8 +27,11 @@
       for (var msg in chatHistory) {
         $('#messages').append($('<li>').html(chatHistory[msg]));
       }
-
 		});
+    socket.on('new name', function(name){
+      $('#username')[0].innerHTML = name;
+      document.cookie = "SengA3=" + name;
+    });
     socket.on('user update', function(userList){
 			$('#users ul').empty();
       console.log('Emptied the user list. Updating...');
@@ -34,6 +39,9 @@
         console.log(userList[user]);
         $('#users ul').append($('<li>').html(userList[user]));
       }
+		});
+    socket.on('refresh', function(){
+			location.reload();
 		});
     //End main
 	});
