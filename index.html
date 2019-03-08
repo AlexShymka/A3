@@ -8,30 +8,79 @@
 	<script src="https://code.jquery.com/jquery-1.11.1.js"></script>
 	<script>
 	  $(function () {
+    //Alex Shymka code
+    //Function Variables
 		var socket = io();
+    var weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    //Function to format messages. Used on neew chats and when loading the history.
+    function formatMsg(msg){
+      var msgdate = new Date(msg.msgdate);
+      if (msgdate != 'Invalid Date') {  //If the date is invlaid it is a name change message.
+        console.log(msgdate);
+        var msgMins = msgdate.getMinutes();
+        if (msgMins < 10) {
+          msgMins = '0' + msgMins;
+        }
+        var msgHours = msgdate.getHours();
+        if (msgHours < 10) {
+          msgHours = '0' + msgHours;
+        }
+        var formattedDate = weekdays[msgdate.getDay()] + ' ' + months[msgdate.getMonth()] +' ' + msgdate.getDate() + ' ' + (msgdate.getYear() + 1900) + ' ' + msgHours + ':'+ msgMins +'; ';
+        var fullMsg = formattedDate + '<span style=color:' + msg.color + '>' + msg.user + ':</span> ' + msg.text;
+        console.log('spliced: ' + document.cookie.slice(7));
+        //If their nick matches the user who sent the message we bold it.
+        if (document.cookie.slice(7) === msg.user) {
+          fullMsg = '<b>' + fullMsg + '<b>';
+        }
+      }
+      else { //Name change messages go here. They are just text.
+          fullMsg = msg;
+        }
+      return fullMsg;
+    }
+
+    //socket io tutorial message emitter
 		$('form').submit(function(e){
 			e.preventDefault(); // prevents page reloading
 			socket.emit('chat message', $('#m').val());
 			$('#m').val('');
 			return false;
 		});
+
+    //Append message to list and scroll to bottom
 		socket.on('chat message', function(msg){
-			$('#messages').append($('<li>').html(msg));
+			$('#messages').append($('<li>').html(formatMsg(msg)));
       console.log(document.cookie);
       $('#msgbox').scrollTop(999999999);
 		});
+
+    //I probably goof do without this function and use chat messages instead.
+    socket.on('server message', function(msg){
+      $('#messages').append($('<li>').html(msg));
+      console.log(document.cookie);
+      $('#msgbox').scrollTop(999999999);
+		});
+
+    //When a user joins they get the list of online users and the chat history.
     socket.on('register', function(username, chatHistory){
 			$('#username')[0].innerHTML = username;
       $('#users ul').empty();
       $('#messages').empty();
       for (var msg in chatHistory) {
-        $('#messages').append($('<li>').html(chatHistory[msg]));
+        $('#messages').append($('<li>').html(formatMsg(chatHistory[msg])));
       }
+      //We don't scoll to bottom incase they wanna get caught up.
 		});
+
+    //update cookie on new name.
     socket.on('new name', function(name){
       $('#username')[0].innerHTML = name;
       document.cookie = "SengA3=" + name;
     });
+
+    //Empty and refresh the list. So efficient right?
     socket.on('user update', function(userList){
 			$('#users ul').empty();
       console.log('Emptied the user list. Updating...');
@@ -39,9 +88,6 @@
         console.log(userList[user]);
         $('#users ul').append($('<li>').html(userList[user]));
       }
-		});
-    socket.on('refresh', function(){
-			location.reload();
 		});
     //End main
 	});

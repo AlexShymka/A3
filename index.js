@@ -4,12 +4,13 @@ var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var cookieParser = require('cookie-parser');
 
-//app.use(express.static(__dirname)); // So CSS works
+//Genuine Alex Shymka Code.
+//Variables and cookie parser
 app.use(cookieParser());
 let port = 3000;
 var i = 0;
-var onlineUsers = [];
-var allUsers = [];
+var onlineUsers = []; //Current online users
+var allUsers = [];  //Every name that has ever been taken
 var userColor = [];
 var chatHistory = [];
 
@@ -22,54 +23,51 @@ app.get('/list', function(req, res){
 app.get('/', function(req, res){
   console.log("Cookie Parsing");
 
+  //If they have a cookie that becomes they're username
   if (req.cookies['SengA3']) {
     username = req.cookies['SengA3'];
     console.log('Cookie found. Value: ' + req.cookies['SengA3']);
-
   }
-  else {
+  else {  //else we assign them a new username
     username = 'user_'+ i;
     i++;
     res.cookie('SengA3', username);
     allUsers.push(username);
     console.log(allUsers);
-    userColor[allUsers.indexOf(username)] = [000,000,000];
+    userColor[allUsers.indexOf(username)] = '#000000';
     console.log(userColor);
     console.log("No Cookie found. Cookie Sent");
   }
-
+//Send them the page
   app.use(express.static(__dirname)); // So CSS works
   res.sendFile(__dirname + '/index.html');
 });
 
-var weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
 console.log("init_done");
 
 io.on('connection', function(socket){
   console.log("connection...");
-  /* Attempt at handling undefined cookies
-  if (username == undefined) {
-    socket.emit('refresh');
-    return;
-  }*/
   console.log(username + " Connecting");
   socket.thisUser = username;
   socket.color = userColor[allUsers.indexOf(socket.thisUser)];
   onlineUsers.push(socket.thisUser);
-
   console.log(socket.thisUser + ' connected' + 'with color' + socket.color );
+
+  //Fix for bug that appeared when starting and stopping the server a bunch during development.
   if (socket.color === undefined && username != undefined) {
     console.log("color is undefined. Fixing that");
-    userColor[allUsers.indexOf(username)] = [000,000,000];
+    userColor[allUsers.indexOf(username)] = '#000000';
     socket.color = userColor[allUsers.indexOf(username)];
     console.log('color now: ' + socket.color);
   }
+
   console.log(onlineUsers);
 
   socket.emit('register', socket.thisUser, chatHistory);
   io.emit('user update', onlineUsers);
 
+  //When they disconnect remove them from the list of online users.
 	socket.on('disconnect', function(){
     onlineUsers.splice(onlineUsers.indexOf(socket.thisUser), 1);
     console.log('user ' + socket.thisUser + ' disconnected');
@@ -77,13 +75,21 @@ io.on('connection', function(socket){
     io.emit('user update', onlineUsers);
   })
 
+  //Chat handling
   socket.on('chat message', function(msg){
+    //Message Object
+    var msgObj = {
+      msgdate: new Date(),
+      user: socket.thisUser,
+      color: '#000000',
+      text: '',
+    };
     //Nickname Change
     if (msg.startsWith("/nick ")) {
       var newNick = msg.slice(6);
       var oldNick = socket.thisUser;
       console.log('Potential new nick: ' + newNick);
-      if (allUsers.indexOf(newNick) === -1) {
+      if (allUsers.indexOf(newNick) === -1) { //Compare nick against all users.
         console.log('nickname is good');
         onlineUsers.splice(onlineUsers.indexOf(oldNick), 1, newNick);
         allUsers.splice(allUsers.indexOf(oldNick), 1, newNick);
@@ -94,49 +100,37 @@ io.on('connection', function(socket){
         socket.emit('new name', socket.thisUser);
         io.emit('user update', onlineUsers);
         chatHistory.push(msg);
-        io.emit('chat message', msg);
+        io.emit('server message', msg);
       }
       else {
         console.log('nickname already exists');
-        socket.emit('chat message', 'That nickname is in use. Please try another');
+        socket.emit('server message', 'That nickname is in use. Please try another');
       }
     }
     //Change Color
     else if (msg.startsWith("/nickcolor")){
       var newclr = msg.slice(11);
-      if (newclr.length === 9) {
+      if (newclr.length === 6) {
         console.log('Changing color for ' + socket.thisUser);
-        userColor[allUsers.indexOf(socket.thisUser)] = [newclr.substr(0,3), newclr.substr(3,3), newclr.substr(6,3)]
+        userColor[allUsers.indexOf(socket.thisUser)] = '#' + newclr;
         socket.color = userColor[allUsers.indexOf(socket.thisUser)];
         console.log(socket.color);
-        var colorFormat = '<span style=color:rgb(' + socket.color[0] + ',' + socket.color[1] + ',' + socket.color[2] + ')>';
-        socket.emit('chat message', 'You\'ve got a new color. It looks like ' + colorFormat + 'this!</span>');
+        var colorFormat = '<span style=color:' + socket.color + '>';
+        socket.emit('server message', 'You\'ve got a new color. It looks like ' + colorFormat + 'this!</span>');
       }
       else {
         console.log('Bad format from color request by: ' + socket.thisUser);
-        socket.emit('chat message', 'Bad color format. RGB value must be 9 numbers. Preprend 0s to numbers under 100');
+        socket.emit('server message', 'Bad color format. RGB value must be length 6 hex code for the color. Leave out the #');
       }
-
 
     }
     //Normal Message
     else {
-      var msgdate = new Date();
-      var msgMins = msgdate.getMinutes();
-      if (msgMins < 10) {
-        msgMins = '0' + msgMins;
-      }
-      var msgHours = msgdate.getHours();
-      if (msgHours < 10) {
-        msgHours = '0' + msgHours;
-      }
-      var formattedDate = weekdays[msgdate.getDay()] + ' ' + months[msgdate.getMonth()] +' ' + msgdate.getDate() + ' ' + (msgdate.getYear() + 1900) + ' ' + msgHours + ':'+ msgMins +'; ';
-      var colorFormat = '<span style=color:rgb(' + socket.color[0] + ',' + socket.color[1] + ',' + socket.color[2] + ')>';
-      msg = formattedDate + colorFormat + socket.thisUser + "</span>: " + msg;
-      console.log('message: ' + msg); //Could save the message with the formatting if needed.
-      chatHistory.push(msg);
-      socket.broadcast.emit('chat message', msg);
-      socket.emit('chat message', '<b>' + msg +'</b>' );
+      msgObj.text = msg;
+      msgObj.color = userColor[allUsers.indexOf(socket.thisUser)];
+      console.log('message: ' + JSON.stringify(msgObj)); //Could save the message with the formatting if needed.
+      chatHistory.push(msgObj);
+      io.emit('chat message', msgObj);
     }
 
     //Final Stuff

@@ -45,6 +45,10 @@ form button {
   width: 150px;
   overflow: auto;
   white-space: nowrap;
+  padding: 5px;
+}
+#users ul{
+  list-style: none;
 }
 #users li{
   margin: 4px;
